@@ -2,10 +2,15 @@ package com.example.calculatorapp
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+
+private val STATE_OPERAND = "Operand"
+private val STATE_PENDINGOPERATION = "Pending operation"
+private val STATE_OPERAND_SAVED = "Operand saved"
 
 class MainActivity : AppCompatActivity() {
     private lateinit var result: EditText
@@ -13,8 +18,9 @@ class MainActivity : AppCompatActivity() {
     private val displayOperation by lazy(LazyThreadSafetyMode.NONE) { findViewById<TextView>(R.id.operation) }
 
     // Variables to hold the operands and type of calculation
-    private var operand1: Double? = null
+    private var operand: Double? = null
     private var pendingOperation = "="
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -80,26 +86,49 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun performOperation(value: Double, operation: String) {
-        if (operand1 == null) {
-            operand1 = value
+        if (operand == null) {
+            operand = value
         } else {
             if (pendingOperation == "=") {
                 pendingOperation = operation
             }
             when (pendingOperation) {
-                "=" -> operand1 = value
-                "/" -> operand1 = if (value == 0.0) {
+                "=" -> operand = value
+                "/" -> operand = if (value == 0.0) {
                     Double.NaN // handle attempt to divide by zero
                 } else {
-                    operand1!! / value
+                    operand!! / value
                 }
-                "*" -> operand1 = operand1!! * value
-                "-" -> operand1 = operand1!! - value
-                "+" -> operand1 = operand1!! + value
+                "*" -> operand = operand!! * value
+                "-" -> operand = operand!! - value
+                "+" -> operand = operand!! + value
             }
         }
 
-        result.setText(operand1.toString())
+        result.setText(operand.toString())
         newNumber.setText("")
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        Log.d("MainActivity: ", "onSaveInstanceState called")
+        super.onSaveInstanceState(outState)
+        if (operand != null) {
+            outState.putDouble(STATE_OPERAND, operand!!)
+            outState.putBoolean(STATE_OPERAND_SAVED, true)
+        }
+        outState.putString(STATE_PENDINGOPERATION, pendingOperation)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        Log.d("MainActivity: ", "onRestoreInstanceState called")
+        super.onRestoreInstanceState(savedInstanceState)
+        operand = if (savedInstanceState.getBoolean(STATE_OPERAND_SAVED)) {
+            savedInstanceState.getDouble(STATE_OPERAND)
+        } else {
+            null
+        }
+        pendingOperation = savedInstanceState.getString(
+            STATE_PENDINGOPERATION).toString()
+        displayOperation.text = pendingOperation
     }
 }

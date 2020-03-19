@@ -14,7 +14,6 @@ class MainActivity : AppCompatActivity() {
 
     // Variables to hold the operands and type of calculation
     private var operand1: Double? = null
-    private var operand2: Double = 0.0
     private var pendingOperation = "="
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,9 +61,11 @@ class MainActivity : AppCompatActivity() {
 
         val opListener = View.OnClickListener { v ->
             val op = (v as Button).text.toString()
-            val value = newNumber.text.toString()
-            if (value.isNotEmpty()) {
-                performOperation(value, op)
+            try {
+                val value = newNumber.text.toString()
+                performOperation(value.toDouble(), op)
+            } catch (e: NumberFormatException) {
+                newNumber.setText("")
             }
 
             pendingOperation = op
@@ -78,25 +79,23 @@ class MainActivity : AppCompatActivity() {
         buttonPlus.setOnClickListener(opListener)
     }
 
-    private fun performOperation(value: String, operation: String) {
+    private fun performOperation(value: Double, operation: String) {
         if (operand1 == null) {
-            operand1 = value.toDouble()
+            operand1 = value
         } else {
-            operand2 = value.toDouble()
-
             if (pendingOperation == "=") {
                 pendingOperation = operation
             }
             when (pendingOperation) {
-                "=" -> operand1 = operand2
-                "/" -> if (operand2 == 0.0) {
-                           operand1 = Double.NaN // handle attempt to divide by zero
-                       } else {
-                           operand1 == operand1!! / operand2
-                       }
-                "*" -> operand1 = operand1!! * operand2
-                "-" -> operand1 = operand1!! - operand2
-                "+" -> operand1 = operand1!! + operand2
+                "=" -> operand1 = value
+                "/" -> operand1 = if (value == 0.0) {
+                    Double.NaN // handle attempt to divide by zero
+                } else {
+                    operand1!! / value
+                }
+                "*" -> operand1 = operand1!! * value
+                "-" -> operand1 = operand1!! - value
+                "+" -> operand1 = operand1!! + value
             }
         }
 
